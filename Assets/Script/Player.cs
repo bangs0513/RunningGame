@@ -23,6 +23,7 @@ public class Player : MonoBehaviour
     public Animator animator;
 
 
+    public float HP1 = 0;
     public float playerHP;
 
     // Start is called before the first frame update
@@ -30,7 +31,7 @@ public class Player : MonoBehaviour
     {
         Jumpcount = 0;
         playerHP = 5;
-    }
+    }   
 
     // Update is called once per frame
     void Update()
