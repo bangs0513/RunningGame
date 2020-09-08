@@ -29,6 +29,7 @@ public class Player : MonoBehaviour
     void Start()
     {
         Jumpcount = 0;
+        playerHP = 5;
     }
 
     // Update is called once per frame
