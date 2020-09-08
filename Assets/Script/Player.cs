@@ -21,8 +21,9 @@ public class Player : MonoBehaviour
     public Rigidbody rb;
 
     public Animator animator;
-    
 
+
+    public float playerHP;
 
     // Start is called before the first frame update
     void Start()
