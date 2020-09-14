@@ -8,6 +8,8 @@ public class GameManager : MonoBehaviour
 
     public CameraManager cameraManager;
 
+    int a;
+
     private void Awake()
     {
         if (Instance == null)

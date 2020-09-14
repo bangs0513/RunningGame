@@ -17,7 +17,7 @@ public class UiController : MonoBehaviour
     private float culMissonMax = 0;
 
     [SerializeField]
-    private testPlayer test;
+    private Player player;
 
     public float mailCount { get; set; } = 5; // 우편물 개수
     public float missionCount { get; set; } = 0; // 미션 성공 수
@@ -32,7 +32,7 @@ public class UiController : MonoBehaviour
     private void Update()
     {
         mailTx.text = $"우편물 : {mailCount}"; // 현재 우편물 개수 출력
-        testTx.text = $"스피드 : {test.WalkSpeed}";
+        testTx.text = $"스피드 : {player.WalkSpeed}";
         MissonAchievementQuotient();
     }
 
