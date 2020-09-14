@@ -6,9 +6,6 @@ TagManager:
   tags:
   - Ground
   - obstacle
-  - Mail
-  - Misson
-  - Item
   layers:
   - Default
   - TransparentFX
