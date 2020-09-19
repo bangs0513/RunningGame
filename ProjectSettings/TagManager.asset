@@ -9,6 +9,7 @@ TagManager:
   - Mail
   - Misson
   - Item
+  - End
   layers:
   - Default
   - TransparentFX

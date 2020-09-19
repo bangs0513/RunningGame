@@ -5,13 +5,26 @@ using UnityEngine.SceneManagement;
 
 public class Player : MonoBehaviour
 {
+    // 플레이어 상태
+    public enum PlayerStatus
+    {
+        GROUND,
+        JUMP,
+        Coll,
+        DASH,
+        INVINCIBILITY, // 무적
+        DEAD, // 사망
+        CLEAR
+    }
 
-    [Range(0, 15)]
-    public float WalkSpeed = 2f;
+    [Range(0, 20)]
+    public float WalkSpeed = 10f;
+    // clamp 조절용
+    private int minSpeed = 4; 
+    private int maxSpeed = 9;
 
     [Range(0, 10)]
     public float BigJumpspeed = 10f; //
-
 
     [Header("점프횟수")]
     public int Jumpcount = 2;
@@ -24,21 +37,41 @@ public class Player : MonoBehaviour
     public Rigidbody rb;
 
     public Animator animator;
-    
-
+     
     //무적시간 
     [Header("무적시간")]
     public float invincibilityTimeset = 0.2f;
 
+    [SerializeField]
+    private UiController uiController;
+
+    private bool missonCheck = false;
+    [SerializeField, Tooltip("상호작용 UI의 이동에 관련된 트랜스폼")]
+    private RectTransform missonResultPos;
+
+    [SerializeField, Header("데미지 나눌 퍼센트")]
+    private float damagePercnt = 2f;
+
+    [SerializeField, Header("피버타임 시간")]
+    private float fever = 2f;
+
+    [SerializeField, Header("피버이펙트")]
+    private GameObject feverEffect;
+
+    [SerializeField, Header("점프이펙트")]
+    private GameObject JumpEffect;
+
+    //현재 player 상태 저장 
+    public PlayerStatus playerStatus;
+
+    ////현재 player 상태 저장 
+    //public string playerst = playerstatus.GROUND.ToString();
 
     //jump check
     private bool Jumpkey = false;
 
     //점프 강약 key check
     private float keyTime = 0f;
-
-    //현재 player 상태 저장 
-    public string playerst = playerstatus.GROUND.ToString();
 
     //무적 switching
     private bool invincibility = false;
@@ -48,11 +81,7 @@ public class Player : MonoBehaviour
 
     //초기에 color값 저장
     private Color preplayerColor;
-
-
-
-
-    // Start is called before the first frame update
+    
     void Start()
     {
         Jumpcount = 0;
@@ -66,23 +95,16 @@ public class Player : MonoBehaviour
         preplayerColor = playerRenderer.material.color;
     }
 
-    // Update is called once per frame
     void Update()
     {
-
-        //position 이동 
-        player.transform.position += new Vector3(1, 0, 0) * Time.deltaTime * WalkSpeed;
-
         //camera 이동 
-        GameManager.Instance.cameraManager.gameObject.transform.position += new Vector3(1, 0, 0) * Time.deltaTime * WalkSpeed;
-
-        
+     //   GameManager.Instance.cameraManager.gameObject.transform.position += new Vector3(1, 0, 0) * Time.deltaTime * WalkSpeed;
 
         if (isGround)
         {
             if (Jumpcount > 0)
             {
-                if (status == playerstatus.DASH) return;
+                if (playerStatus == PlayerStatus.DASH) return;
 
                 if (Input.GetKeyDown(KeyCode.Space))
                 {
@@ -100,9 +122,19 @@ public class Player : MonoBehaviour
         updateMissonResultPos();
     }
 
+    // 물리 이동 처리
+    private void FixedUpdate()
+    {
+        if(playerStatus != PlayerStatus.CLEAR)
+        {
+            var rig = rb.velocity;
+            rig.x = 50 * Time.deltaTime * WalkSpeed;
+            rb.velocity = rig;
+        }
+    }
+
     private void Jump()
     {
-
         animator.SetTrigger("Jump");
         rb.AddForce(new Vector3(0, 1, 0) * BigJumpspeed, ForceMode.Impulse);
         JumpEffect.gameObject.transform.position = gameObject.transform.position;
@@ -110,8 +142,6 @@ public class Player : MonoBehaviour
         JumpEffect.SetActive(true);
         Jumpcount--;
     }
-
-  
 
     private void OnCollisionEnter(Collision collision)
     {
@@ -129,22 +159,15 @@ public class Player : MonoBehaviour
             invincibility = true;
             StartCoroutine(invincibilityTime());
         }
-    }
 
-    [SerializeField]
-    private UiController uiController;
-    private bool missonCheck = false;
-    [SerializeField, Tooltip("상호작용 UI의 이동에 관련된 트랜스폼")]
-    private RectTransform missonResultPos;
-    [SerializeField, Header("데미지 나눌 퍼센트")]
-    private float damagePercnt = 2f;
-    [SerializeField, Header("피버타임 시간")]
-    private float fever = 2f;
-    [SerializeField, Header("피버이펙트")]
-    private GameObject feverEffect;
-    [SerializeField, Header("점프이펙트")]
-    private GameObject  JumpEffect;
-    playerstatus status;
+        // 도착지점
+        if (collision.gameObject.CompareTag("End"))
+        {
+            print("끝");
+            playerStatus = PlayerStatus.CLEAR;
+            animator.StopPlayback();
+        }
+    }
 
     private void OnTriggerEnter(Collider other)
     {
@@ -159,9 +182,9 @@ public class Player : MonoBehaviour
             if (uiController.mailCount >= 5)
             {
                 // 피버상태에서 원래 스피드로 되돌아 오는 현상 방지
-                if (status == playerstatus.DASH) return;
+                if (playerStatus == PlayerStatus.DASH) return;
                 WalkSpeed++;
-                WalkSpeed = Mathf.Clamp(WalkSpeed, 1, 5);
+                WalkSpeed = Mathf.Clamp(WalkSpeed, minSpeed, maxSpeed);
                 //float culWalkSpeed = WalkSpeed++;
                 //WalkSpeed = Mathf.Lerp(WalkSpeed, culWalkSpeed, Time.deltaTime * 2);
             }
@@ -175,12 +198,12 @@ public class Player : MonoBehaviour
             print("장애물");
 
             // 무적, 대쉬 상태일 경우 피격 판정 처리를 하지 않음
-            if (status == playerstatus.INVINCIBILITY || status == playerstatus.DASH) return;
+            if (playerStatus == PlayerStatus.INVINCIBILITY || playerStatus == PlayerStatus.DASH) return;
 
             // ui 카운트 감소
             float Damage = Mathf.Ceil((uiController.mailCount / damagePercnt)); // 퍼센트로 나눈 값의 소수점 올림 처리하여 감소
             WalkSpeed--;
-            WalkSpeed = Mathf.Clamp(WalkSpeed, 1, 5);
+            WalkSpeed = Mathf.Clamp(WalkSpeed, minSpeed, maxSpeed);
             uiController.mailCount -= Damage;
             uiController.mailCount = Mathf.Clamp(uiController.mailCount, 0, 15);
             // 나중에 죽는 거 처리
@@ -200,7 +223,7 @@ public class Player : MonoBehaviour
         if (other.CompareTag("Item"))
         {
             // 상태 변경
-            status = playerstatus.DASH;
+            playerStatus = PlayerStatus.DASH;
             // 속도 증가
             StartCoroutine(feverTime());
             // 이펙트 활성화
@@ -230,7 +253,7 @@ public class Player : MonoBehaviour
             // 우편물을 소지하고 있지 않으면
             if (uiController.mailCount <= 0) return;
             // 액션 키 입력
-            if (Input.GetKeyDown(KeyCode.LeftShift) || status == playerstatus.DASH)
+            if (Input.GetKeyDown(KeyCode.LeftShift) || playerStatus == PlayerStatus.DASH)
             {
                 print("미션성공");
                 missonCheck = true;
@@ -260,7 +283,7 @@ public class Player : MonoBehaviour
     IEnumerator MissonResultAtive()
     {
         missonResultPos.gameObject.SetActive(true);
-        yield return new WaitForSeconds(1f);
+        yield return new WaitForSeconds(0.2f);
         missonResultPos.gameObject.SetActive(false);
         missonCheck = false;
     }
@@ -279,7 +302,7 @@ public class Player : MonoBehaviour
 
         WalkSpeed = culSpeed; // 원래 스피드로 돌아옴
          // 상태 변경
-        status = playerstatus.GROUND; // 상태 정의 픽스되면 변경되어야 함
+        playerStatus = PlayerStatus.GROUND; // 상태 정의 픽스되면 변경되어야 함
         GetComponent<Rigidbody>().useGravity = true; // 중력 활성화
         feverEffect.SetActive(false); // 이펙트 비활성화
     }
@@ -312,16 +335,6 @@ public class Player : MonoBehaviour
     {
 
     }
-
-    private enum playerstatus
-    {
-        GROUND,
-        JUMP,
-        Coll,
-        DASH,
-        INVINCIBILITY // 무적
-    }
-
 
     //피격당했을시에 무적시간  
     IEnumerator invincibilityTime()
