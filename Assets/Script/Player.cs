@@ -10,13 +10,11 @@ public class Player : MonoBehaviour
     public float WalkSpeed = 2f;
 
     [Range(0, 10)]
-    public float BigJumpspeed = 5f; //
+    public float BigJumpspeed = 10f; //
 
-    [Range(0, 5)]
-    public float SmallJumpspeed = 2.5f;
 
     [Header("점프횟수")]
-    public int Jumpcount = 1;
+    public int Jumpcount = 2;
 
     //player 가 땅에 있는지 없는지 check
     public bool isGround = false;
@@ -26,6 +24,7 @@ public class Player : MonoBehaviour
     public Rigidbody rb;
 
     public Animator animator;
+    
 
     //무적시간 
     [Header("무적시간")]
@@ -52,10 +51,13 @@ public class Player : MonoBehaviour
 
 
 
+
     // Start is called before the first frame update
     void Start()
     {
         Jumpcount = 0;
+
+        JumpEffect.SetActive(false);
 
         Transform test = transform.Find("Toon ChickMat");
         GameObject test1 = test.gameObject;
@@ -74,11 +76,7 @@ public class Player : MonoBehaviour
         //camera 이동 
         GameManager.Instance.cameraManager.gameObject.transform.position += new Vector3(1, 0, 0) * Time.deltaTime * WalkSpeed;
 
-
-        if (Jumpkey)
-        {
-            keyTime += Time.deltaTime;
-        }
+        
 
         if (isGround)
         {
@@ -92,17 +90,9 @@ public class Player : MonoBehaviour
                     keyTime = 0;
 
                 }
-                if (Input.GetKeyUp(KeyCode.Space))
+                if (Input.GetKeyDown(KeyCode.Space))
                 {
-                    Jumpkey = false;
-                    if (keyTime > 0.3f)
-                    {
-                        BigJump();
-                    }
-                    else
-                    {
-                        smallJump();
-                    }
+                        Jump();
                 }
             }
         }
@@ -110,26 +100,24 @@ public class Player : MonoBehaviour
         updateMissonResultPos();
     }
 
-    private void BigJump()
+    private void Jump()
     {
 
         animator.SetTrigger("Jump");
         rb.AddForce(new Vector3(0, 1, 0) * BigJumpspeed, ForceMode.Impulse);
+        JumpEffect.gameObject.transform.position = gameObject.transform.position;
+
+        JumpEffect.SetActive(true);
         Jumpcount--;
     }
 
-    private void smallJump()
-    {
-
-        animator.SetTrigger("Jump");
-        rb.AddForce(new Vector3(0, 1, 0) * SmallJumpspeed, ForceMode.Impulse);
-        Jumpcount--;
-    }
+  
 
     private void OnCollisionEnter(Collision collision)
     {
         if (collision.gameObject.tag == "Ground")
         {
+            JumpEffect.SetActive(false);
             isGround = true;
             Jumpcount = 2;
             animator.SetBool("Walk", true);
@@ -154,6 +142,8 @@ public class Player : MonoBehaviour
     private float fever = 2f;
     [SerializeField, Header("피버이펙트")]
     private GameObject feverEffect;
+    [SerializeField, Header("점프이펙트")]
+    private GameObject  JumpEffect;
     playerstatus status;
 
     private void OnTriggerEnter(Collider other)
@@ -219,11 +209,11 @@ public class Player : MonoBehaviour
             Destroy(other.gameObject);
         }
 
-        // 임시 사망처리
-        if (other.CompareTag("Finish"))
-        {
-            SceneManager.LoadScene("Bang"); // 리로드
-        }
+        //// 임시 사망처리
+        //if (other.CompareTag("Finish"))
+        //{
+        //    SceneManager.LoadScene("Bang"); // 리로드
+        //}
     }
 
     private void OnTriggerStay(Collider other)
