@@ -20,8 +20,8 @@ public class Player : MonoBehaviour
     [Range(0, 20)]
     public float WalkSpeed = 10f;
     // clamp 조절용
-    private int minSpeed = 4; 
-    private int maxSpeed = 9;
+    private int minSpeed = 5; 
+    private int maxSpeed = 10;
 
     [Range(0, 10)]
     public float BigJumpspeed = 10f; //
@@ -49,8 +49,11 @@ public class Player : MonoBehaviour
     [SerializeField, Tooltip("상호작용 UI의 이동에 관련된 트랜스폼")]
     private RectTransform missonResultPos;
 
-    [SerializeField, Header("데미지 나눌 퍼센트")]
-    private float damagePercnt = 2f;
+    [SerializeField, Header("데미지 나눌 퍼센트(장애물)")]
+    private float damagePercnt1 = 0.3f;
+
+    [SerializeField, Header("데미지 나눌 퍼센트(추락)")]
+    private float damagePercnt2 = 0.5f;
 
     [SerializeField, Header("피버타임 시간")]
     private float fever = 2f;
@@ -63,9 +66,6 @@ public class Player : MonoBehaviour
 
     //현재 player 상태 저장 
     public PlayerStatus playerStatus;
-
-    ////현재 player 상태 저장 
-    //public string playerst = playerstatus.GROUND.ToString();
 
     //jump check
     private bool Jumpkey = false;
@@ -81,7 +81,16 @@ public class Player : MonoBehaviour
 
     //초기에 color값 저장
     private Color preplayerColor;
-    
+
+    //알약을 먹었을 때 플레이어 위치
+    private Vector3 ItemEatPos;
+
+    [SerializeField, Header("아이템먹었을 때 위로 올라가는 높이")]
+    private float ItemEatheight =1f;
+
+    [SerializeField, Header("아이템 먹고 올라가는 시간")]
+    private float ItemApexTime = 0.4f;
+
     void Start()
     {
         Jumpcount = 0;
@@ -104,7 +113,7 @@ public class Player : MonoBehaviour
         {
             if (Jumpcount > 0)
             {
-                if (playerStatus == PlayerStatus.DASH) return;
+                if (playerStatus == PlayerStatus.DASH || playerStatus == PlayerStatus.CLEAR) return;
 
                 if (Input.GetKeyDown(KeyCode.Space))
                 {
@@ -125,12 +134,27 @@ public class Player : MonoBehaviour
     // 물리 이동 처리
     private void FixedUpdate()
     {
-        if(playerStatus != PlayerStatus.CLEAR)
+        // 죽으면 동작하지 않음
+        //if (playerStatus == PlayerStatus.DEAD) return;
+
+        if (playerStatus != PlayerStatus.CLEAR || playerStatus != PlayerStatus.DEAD)
         {
             var rig = rb.velocity;
             rig.x = 50 * Time.deltaTime * WalkSpeed;
             rb.velocity = rig;
         }
+        else
+            rb.velocity = new Vector3(0,rb.velocity.y,0); // 도착지점 도착 시 움직이지 못하게 처리함
+
+        // 피버타임 날기 처리
+        if(playerStatus == PlayerStatus.DASH)
+        {
+            Vector3 pos = rb.position;
+            pos.y = Mathf.Lerp(rb.position.y, ItemEatPos.y, Time.deltaTime * ItemApexTime);
+
+            rb.position = pos;
+        }
+ 
     }
 
     private void Jump()
@@ -152,22 +176,11 @@ public class Player : MonoBehaviour
             Jumpcount = 2;
             animator.SetBool("Walk", true);
         }
-
-
-        if (collision.gameObject.tag == "obstacle")
-        {
-            invincibility = true;
-            StartCoroutine(invincibilityTime());
-        }
-
-        // 도착지점
-        if (collision.gameObject.CompareTag("End"))
-        {
-            print("끝");
-            playerStatus = PlayerStatus.CLEAR;
-            animator.StopPlayback();
-        }
     }
+
+    private Vector3 respawnPos = Vector3.zero; // 리스폰 될 위치 저장
+    [SerializeField, Header("장애물 넉백")]
+    private float knockbackForce = 50f;
 
     private void OnTriggerEnter(Collider other)
     {
@@ -200,21 +213,21 @@ public class Player : MonoBehaviour
             // 무적, 대쉬 상태일 경우 피격 판정 처리를 하지 않음
             if (playerStatus == PlayerStatus.INVINCIBILITY || playerStatus == PlayerStatus.DASH) return;
 
+            StartCoroutine(startKnockback());
+
             // ui 카운트 감소
-            float Damage = Mathf.Ceil((uiController.mailCount / damagePercnt)); // 퍼센트로 나눈 값의 소수점 올림 처리하여 감소
+            float Damage = Mathf.Ceil((uiController.mailCount * damagePercnt1)); // 퍼센트로 나눈 값의 소수점 올림 처리하여 감소
             WalkSpeed--;
             WalkSpeed = Mathf.Clamp(WalkSpeed, minSpeed, maxSpeed);
             uiController.mailCount -= Damage;
-            uiController.mailCount = Mathf.Clamp(uiController.mailCount, 0, 15);
-            // 나중에 죽는 거 처리
-            if (uiController.mailCount <= 0)
-            {
-                SceneManager.LoadScene("Bang"); // 리로드
-            }
+            // 죽음 판정
+            checkedDead();
+            uiController.mailCount = Mathf.Clamp(uiController.mailCount, -1, 15);
 
             // 장애물 삭제
             Destroy(other.gameObject);
 
+            //무적
             invincibility = true;
             StartCoroutine(invincibilityTime());
         }
@@ -228,15 +241,76 @@ public class Player : MonoBehaviour
             StartCoroutine(feverTime());
             // 이펙트 활성화
             feverEffect.SetActive(true);
+            //플레이어 현재 위치
+            ItemEatPos = transform.position;
+            ItemEatPos.y += ItemEatheight;
             // 아이템 삭제
             Destroy(other.gameObject);
         }
 
-        //// 임시 사망처리
-        //if (other.CompareTag("Finish"))
-        //{
-        //    SceneManager.LoadScene("Bang"); // 리로드
-        //}
+        // 리스폰 저장
+        if (other.CompareTag("resSave"))
+        {
+            respawnPos = other.transform.position;
+        }
+        // 추락 후 리스폰 처리     
+        if (other.CompareTag("resFall"))
+        {
+            Invoke("respawnTime", 0.3f);
+            // 데미지 처리
+            float Damage = Mathf.Ceil((uiController.mailCount * damagePercnt2)); // 퍼센트로 나눈 값의 소수점 올림 처리하여 감소(50%)
+            WalkSpeed--;
+            WalkSpeed = Mathf.Clamp(WalkSpeed, minSpeed, maxSpeed);
+            uiController.mailCount -= Damage;
+            // 죽음 판정
+            checkedDead();
+            //uiController.mailCount = Mathf.Clamp(uiController.mailCount, -1, 15);
+        }
+
+        // 도착지점
+        if (other.CompareTag("End"))
+        {
+            print("끝");
+            playerStatus = PlayerStatus.CLEAR;
+            //animator.StopPlayback();
+            animator.speed = 0;
+            if (!GetComponent<Rigidbody>().useGravity) // 중력 무시 상태일 때
+            {
+                GetComponent<Rigidbody>().useGravity = true;
+            }
+        }
+    }
+
+    IEnumerator startKnockback()
+    {
+        float culSpeed = WalkSpeed; // 피버 전 스피드
+        // 넉백
+        rb.AddForce(Vector3.left * knockbackForce, ForceMode.Impulse);
+        WalkSpeed = 1f; // 잠시 느려짐
+        yield return new WaitForSeconds(0.5f);
+
+        WalkSpeed = culSpeed; // 원래 스피드로 돌아옴
+    }
+
+    // 리스폰 시 걸리는 시간
+    private void respawnTime()
+    {
+        transform.position = respawnPos;
+    }
+
+    // 죽음 체킹
+    private void checkedDead()
+    {
+        if (uiController.mailCount <= 0)
+        {
+            playerStatus = PlayerStatus.DEAD;
+            Invoke("startReroad", 0.2f);
+        }
+    }
+
+    private void startReroad()
+    {
+        SceneManager.LoadScene("Bang"); // 일단은 리로드 되도록 처리, 민환님과 합친 후 그라운드 체크 부분과 맞추어서 status 체킹 처리
     }
 
     private void OnTriggerStay(Collider other)
@@ -244,11 +318,6 @@ public class Player : MonoBehaviour
         // 우편물 미션존
         if (other.CompareTag("Misson"))
         {
-            // 타일 색 변경
-            var tilecolor = other.gameObject.GetComponent<MeshRenderer>().material.color;
-            //other.gameObject.GetComponent<MeshRenderer>().material.color = new Color(tilecolor.r - 0.01f, tilecolor.g - 0.01f, tilecolor.b, tilecolor.a);
-            other.gameObject.GetComponent<MeshRenderer>().material.color = new Color32(200, 200, 200, 0);
-
             print("미션존");
             // 우편물을 소지하고 있지 않으면
             if (uiController.mailCount <= 0) return;
@@ -279,6 +348,18 @@ public class Player : MonoBehaviour
         }
     }
 
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.CompareTag("Misson"))
+        {
+            if (missonCheck) return;
+            //미션 결과 활성화
+            uiController.missionResultTx.text = "실패";
+            uiController.missionResultTx.color = new Color32(255, 0, 0, 180);
+            StartCoroutine(MissonResultAtive());
+        }
+    }
+
     // 미션 결과 활성화
     IEnumerator MissonResultAtive()
     {
@@ -294,29 +375,17 @@ public class Player : MonoBehaviour
         float culSpeed = WalkSpeed; // 피버 전 스피드
 
         WalkSpeed = 15f; // 최고 스피드
+
         // 중력 무시
-        GetComponent<Rigidbody>().useGravity = false;
-        transform.position = new Vector3(transform.position.x, transform.position.y + 1f, transform.position.z);
+        rb.useGravity = false;
 
         yield return new WaitForSeconds(fever);
 
         WalkSpeed = culSpeed; // 원래 스피드로 돌아옴
          // 상태 변경
         playerStatus = PlayerStatus.GROUND; // 상태 정의 픽스되면 변경되어야 함
-        GetComponent<Rigidbody>().useGravity = true; // 중력 활성화
+        rb.useGravity  = true; // 중력 활성화
         feverEffect.SetActive(false); // 이펙트 비활성화
-    }
-
-    private void OnTriggerExit(Collider other)
-    {
-        if (other.CompareTag("Misson"))
-        {
-            if (missonCheck) return;
-            //미션 결과 활성화
-            uiController.missionResultTx.text = "실패";
-            uiController.missionResultTx.color = new Color32(255, 0, 0, 180);
-            StartCoroutine(MissonResultAtive());
-        }
     }
 
     // 미션 결과 ui 처리
@@ -331,15 +400,12 @@ public class Player : MonoBehaviour
         missonResultPos.position = UIPos;
     }
 
-    private void updateSpeed(float val)
-    {
-
-    }
-
     //피격당했을시에 무적시간  
     IEnumerator invincibilityTime()
     {
         int count = 0;
+
+        playerStatus = PlayerStatus.INVINCIBILITY;
 
         while(count < 10)
         {
@@ -359,6 +425,7 @@ public class Player : MonoBehaviour
         playerRenderer.material.color = preplayerColor;
 
         invincibility = false;
+        playerStatus = PlayerStatus.GROUND; // 그라운드 처리?
 
         yield return null;
     }
