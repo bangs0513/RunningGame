@@ -9,6 +9,8 @@ public class UiController : MonoBehaviour
     private Text mailTx; // 우편물
     [SerializeField, Header("미션 달성률")]
     private Text missionTx;
+    [SerializeField, Header("미션 달성률 바")]
+    private Image missionBar;
     [Header("미션 결과")]
     public Text missionResultTx;
     [SerializeField, Header("현재 플레이어 이동속도")]
@@ -34,9 +36,23 @@ public class UiController : MonoBehaviour
         mailTx.text = $"우편물 : {mailCount}"; // 현재 우편물 개수 출력
         testTx.text = $"스피드 : {player.WalkSpeed}";
         MissonAchievementQuotient();
+        SetMissonBar();
     }
 
-    // 미션 달성률
+    // 미션 달성률 이미지
+    private void SetMissonBar()
+    {
+        // 현재 Hp를 0~1 사이의 수로 표현
+        float culMissonSuccess = missionCount / culMissonMax;
+
+        culMissonSuccess = Mathf.Clamp(culMissonSuccess, 0, 1);
+
+        // 게이지 증가 감소
+        if (missionBar != null)
+            missionBar.fillAmount = Mathf.Lerp(missionBar.fillAmount, culMissonSuccess, 2 * Time.deltaTime);
+    }
+
+    // 미션 달성률 텍스트
     private void MissonAchievementQuotient()
     {
         // 현재 미션 달성률

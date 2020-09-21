@@ -10,6 +10,8 @@ TagManager:
   - Misson
   - Item
   - End
+  - resSave
+  - resFall
   layers:
   - Default
   - TransparentFX
