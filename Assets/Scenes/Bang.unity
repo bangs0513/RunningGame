@@ -31299,17 +31299,17 @@ PrefabInstance:
     - target: {fileID: 5656074404392129013, guid: 0db008c0cb7477e499b257a453b2a986,
         type: 3}
       propertyPath: OneJumpSpeed
-      value: 30.3
+      value: 25
       objectReference: {fileID: 0}
     - target: {fileID: 5656074404392129013, guid: 0db008c0cb7477e499b257a453b2a986,
         type: 3}
       propertyPath: TwoJumpSpeed
-      value: 20.1
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 5656074404392129013, guid: 0db008c0cb7477e499b257a453b2a986,
         type: 3}
       propertyPath: WalkSpeed
-      value: 5.8
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 5656074404392129013, guid: 0db008c0cb7477e499b257a453b2a986,
         type: 3}
