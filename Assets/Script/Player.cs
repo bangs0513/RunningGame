@@ -65,12 +65,6 @@ public class Player : MonoBehaviour
     [SerializeField, Header("데미지 나눌 퍼센트(추락)")]
     private float damagePercnt2 = 0.5f;
 
-    [SerializeField, Header("피버타임 시간")]
-    private float fever = 2f;
-
-    [SerializeField, Header("피버이펙트")]
-    private GameObject feverEffect;
-
     [SerializeField, Header("점프이펙트")]
     private GameObject JumpEffect;
 
@@ -105,6 +99,12 @@ public class Player : MonoBehaviour
 
     //알약을 먹었을 때 플레이어 위치
     private Vector3 ItemEatPos;
+
+    [SerializeField, Header("피버타임 시간")]
+    private float fever = 2f;
+
+    [SerializeField, Header("피버이펙트")]
+    private GameObject feverEffect;
 
     [SerializeField, Header("아이템먹었을 때 위로 올라가는 높이")]
     private float ItemEatheight =1f;
@@ -201,8 +201,6 @@ public class Player : MonoBehaviour
 
             rb.position = pos;
         }
-        
-
     }
 
     private void Jump()
@@ -227,8 +225,6 @@ public class Player : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-     
-
         // 도착지점
         if (collision.gameObject.CompareTag("End"))
         {
@@ -296,7 +292,7 @@ public class Player : MonoBehaviour
 
             //무적
             invincibility = true;
-          //  StartCoroutine(invincibilityTime());
+            //StartCoroutine(invincibilityTime());
         }
 
         // 아이템
@@ -308,7 +304,7 @@ public class Player : MonoBehaviour
             // 속도 증가
             StartCoroutine(feverTime());
             // 이펙트 활성화
-            feverEffect.SetActive(true);
+          //  feverEffect.SetActive(true);
             //플레이어 현재 위치
             ItemEatPos = transform.position;
             ItemEatPos.y += ItemEatheight;
@@ -392,7 +388,7 @@ public class Player : MonoBehaviour
             // 우편물을 소지하고 있지 않으면
             if (uiController.mailCount <= 0) return;
             // 액션 키 입력
-            if (Input.GetKeyDown(KeyCode.LeftShift) || playerStatus == PlayerStatus.DASH)
+            if (Input.GetKey(KeyCode.LeftShift) || playerStatus == PlayerStatus.DASH)
             {
                 print("미션성공");
                 missonCheck = true;
@@ -434,7 +430,7 @@ public class Player : MonoBehaviour
     IEnumerator MissonResultAtive()
     {
         missonResultPos.gameObject.SetActive(true);
-        yield return new WaitForSeconds(0.2f);
+        yield return new WaitForSeconds(0.3f);
         missonResultPos.gameObject.SetActive(false);
         missonCheck = false;
     }
@@ -463,7 +459,7 @@ public class Player : MonoBehaviour
          // 상태 변경
         playerStatus = PlayerStatus.GROUND; // 상태 정의 픽스되면 변경되어야 함
         rb.useGravity  = true; // 중력 활성화
-        feverEffect.SetActive(false); // 이펙트 비활성화
+      //  feverEffect.SetActive(false); // 이펙트 비활성화
     }
 
     // 미션 결과 ui 처리
