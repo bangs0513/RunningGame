@@ -17,17 +17,26 @@ public class Player : MonoBehaviour
         CLEAR
     }
 
-    [Range(0, 20)]
+    private GameObject chickmat;
+
+    [Range(0, 50)]
     public float WalkSpeed = 10f;
     // clamp 조절용
-    private int minSpeed = 4; 
+    private int minSpeed = 4;
     private int maxSpeed = 9;
 
-    [Range(0, 10)]
-    public float BigJumpspeed = 10f; //
+    //jump 1단 
+    [Range(0, 50)]
+    public float OneJumpSpeed = 10f; //
+
+
+    [Range(0, 30)]
+    public float TwoJumpSpeed = 10f; //
 
     [Header("점프횟수")]
-    public int Jumpcount = 2;
+    public int Jumpcount = 1;
+
+    private int startJumpcount = 0;
 
     //player 가 땅에 있는지 없는지 check
     public bool isGround = false;
@@ -37,7 +46,7 @@ public class Player : MonoBehaviour
     public Rigidbody rb;
 
     public Animator animator;
-     
+
     //무적시간 
     [Header("무적시간")]
     public float invincibilityTimeset = 0.2f;
@@ -62,7 +71,7 @@ public class Player : MonoBehaviour
     private GameObject JumpEffect;
 
     //현재 player 상태 저장 
-    public PlayerStatus playerStatus;
+    public PlayerStatus playerStatus = PlayerStatus.GROUND;
 
     ////현재 player 상태 저장 
     //public string playerst = playerstatus.GROUND.ToString();
@@ -81,79 +90,126 @@ public class Player : MonoBehaviour
 
     //초기에 color값 저장
     private Color preplayerColor;
-    
+
+    private RaycastHit hit;
+
+    //점프가 최고점에서 떨어질때를 체크 
+    private bool checkJumpHigh = false;
+
+
+    //점프 ray 사거리
+    private float maxDistance = 0.2f;
+
+    private bool isjump = false;
+
+
     void Start()
     {
-        Jumpcount = 0;
+        //chickmat = transform.Find("Toon ChickMat").gameObject;
 
         JumpEffect.SetActive(false);
 
-        Transform test = transform.Find("Toon ChickMat");
-        GameObject test1 = test.gameObject;
-        playerRenderer = test.GetComponent<Renderer>();
+        startJumpcount = Jumpcount;
 
-        preplayerColor = playerRenderer.material.color;
+       // Transform test = transform.Find("Toon ChickMat");
+        //GameObject test1 = test.gameObject;
+
+        //playerRenderer = test.GetComponent<Renderer>();
+
+        //preplayerColor = playerRenderer.material.color;
     }
 
     void Update()
     {
-        //camera 이동 
-     //   GameManager.Instance.cameraManager.gameObject.transform.position += new Vector3(1, 0, 0) * Time.deltaTime * WalkSpeed;
 
-        if (isGround)
+        //점프가 내려올때 체크 
+        if (rb.velocity.y <= 0f && !checkJumpHigh)
         {
-            if (Jumpcount > 0)
+            checkJumpHigh = true;
+        }
+        //camera 이동 
+        //   GameManager.Instance.cameraManager.gameObject.transform.position += new Vector3(1, 0, 0) * Time.deltaTime * WalkSpeed;
+
+        
+      
+        //jump를 위한 raycast 
+        if (Physics.Raycast(transform.position, -transform.up, out hit, 0.4f))
+        {
+
+            if (checkJumpHigh)
             {
-                if (playerStatus == PlayerStatus.DASH) return;
+                checkJumpHigh = false;
 
-                if (Input.GetKeyDown(KeyCode.Space))
+                if (hit.transform.gameObject.tag == "Ground")
                 {
-                    Jumpkey = true;
-                    keyTime = 0;
+                    rb.velocity = new Vector3(rb.velocity.x, 0, rb.velocity.z);
+                    if(rb.velocity.y == 0)
+                    {
+                        animator.SetBool("Jump", false);
+                    }
 
-                }
-                if (Input.GetKeyDown(KeyCode.Space))
-                {
-                        Jump();
+                    Jumpcount = startJumpcount;
+                    playerStatus = PlayerStatus.GROUND;
+                    JumpEffect.SetActive(false);
                 }
             }
+
         }
 
-        updateMissonResultPos();
+
+        if (Input.GetKeyDown(KeyCode.Space) && !isjump && Jumpcount != 0)
+        {
+            isjump = true;
+        }
+
+
+
+            updateMissonResultPos();
     }
 
-    // 물리 이동 처리
+    // 물리 이동,점프 처리
     private void FixedUpdate()
     {
-        if(playerStatus != PlayerStatus.CLEAR)
+        if (playerStatus != PlayerStatus.CLEAR)
         {
             var rig = rb.velocity;
             rig.x = 50 * Time.deltaTime * WalkSpeed;
             rb.velocity = rig;
         }
+
+            if (isjump)
+            {
+                if (playerStatus == PlayerStatus.DASH) return;
+
+                Jump();
+
+            }
+        
+
     }
 
     private void Jump()
     {
-        animator.SetTrigger("Jump");
-        rb.AddForce(new Vector3(0, 1, 0) * BigJumpspeed, ForceMode.Impulse);
-        JumpEffect.gameObject.transform.position = gameObject.transform.position;
+        animator.SetBool("Jump", true);
 
+        playerStatus = PlayerStatus.JUMP;
+        if(Jumpcount == 2)
+        {
+            rb.AddForce(Vector3.up * OneJumpSpeed, ForceMode.Impulse);
+        }
+        else
+        {
+            rb.AddForce(Vector3.up * TwoJumpSpeed / 2, ForceMode.Impulse);
+        }
+        JumpEffect.gameObject.transform.position = gameObject.transform.position;
+       
         JumpEffect.SetActive(true);
+        isjump = false;
         Jumpcount--;
     }
 
     private void OnCollisionEnter(Collision collision)
     {
-        if (collision.gameObject.tag == "Ground")
-        {
-            JumpEffect.SetActive(false);
-            isGround = true;
-            Jumpcount = 2;
-            animator.SetBool("Walk", true);
-        }
-
-
         if (collision.gameObject.tag == "obstacle")
         {
             invincibility = true;
@@ -248,7 +304,7 @@ public class Player : MonoBehaviour
             var tilecolor = other.gameObject.GetComponent<MeshRenderer>().material.color;
             //other.gameObject.GetComponent<MeshRenderer>().material.color = new Color(tilecolor.r - 0.01f, tilecolor.g - 0.01f, tilecolor.b, tilecolor.a);
             other.gameObject.GetComponent<MeshRenderer>().material.color = new Color32(200, 200, 200, 0);
-
+        
             print("미션존");
             // 우편물을 소지하고 있지 않으면
             if (uiController.mailCount <= 0) return;
@@ -301,8 +357,8 @@ public class Player : MonoBehaviour
         yield return new WaitForSeconds(fever);
 
         WalkSpeed = culSpeed; // 원래 스피드로 돌아옴
-         // 상태 변경
-        playerStatus = PlayerStatus.GROUND; // 상태 정의 픽스되면 변경되어야 함
+                              // 상태 변경
+        //playerStatus = PlayerStatus.GROUND; // 상태 정의 픽스되면 변경되어야 함
         GetComponent<Rigidbody>().useGravity = true; // 중력 활성화
         feverEffect.SetActive(false); // 이펙트 비활성화
     }
@@ -326,7 +382,7 @@ public class Player : MonoBehaviour
         if (missonResultPos == null) return;
 
         var UIPos = transform.position;
-        UIPos = new Vector3(UIPos.x+0.2f, UIPos.y += 1.2f, UIPos.z);
+        UIPos = new Vector3(UIPos.x + 0.2f, UIPos.y += 1.2f, UIPos.z);
 
         missonResultPos.position = UIPos;
     }
@@ -341,29 +397,42 @@ public class Player : MonoBehaviour
     {
         int count = 0;
 
-        while(count < 10)
+        while (count < 10)
         {
-            if(count%2 == 0)
+            if (count % 2 == 0)
             {
-                playerRenderer.material.color = new Color32(255, 255, 255, 90);
+                
+             //  playerRenderer.material.SetColor("col", Color.red);
             }
             else
             {
-                playerRenderer.material.color = new Color32(255, 255, 255, 180);
+              //  playerRenderer.enabled = false;
             }
 
             yield return new WaitForSeconds(invincibilityTimeset);
 
             count++;
         }
-        playerRenderer.material.color = preplayerColor;
+        //playerRenderer.material.color = preplayerColor;
 
-        invincibility = false;
+        //invincibility = false;
 
         yield return null;
     }
 
 
+    void OnDrawGizmos()
+    {
 
+        float maxDistance = 0.3f;
+        RaycastHit hit;
+        // Physics.Raycast (레이저를 발사할 위치, 발사 방향, 충돌 결과, 최대 거리)
+        bool isHit = Physics.Raycast(transform.position, -transform.up, out hit, maxDistance);
+
+        Gizmos.color = Color.red;
+     
+            Gizmos.DrawRay(transform.position, -transform.up * hit.distance);
+      
+    }
 
 }
