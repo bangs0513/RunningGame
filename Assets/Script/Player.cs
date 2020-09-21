@@ -35,7 +35,7 @@ public class Player : MonoBehaviour
     public float TwoJumpSpeed = 10f; //
 
     [Header("점프횟수")]
-    public int Jumpcount = 1;
+    public int Jumpcount = 2;
 
     private int startJumpcount = 0;
 
@@ -114,18 +114,10 @@ public class Player : MonoBehaviour
 
     void Start()
     {
-        //chickmat = transform.Find("Toon ChickMat").gameObject;
-
         JumpEffect.SetActive(false);
 
         startJumpcount = Jumpcount;
-
-       // Transform test = transform.Find("Toon ChickMat");
-        //GameObject test1 = test.gameObject;
-
-        //playerRenderer = test.GetComponent<Renderer>();
-
-        //preplayerColor = playerRenderer.material.color;
+        
     }
 
     void Update()
@@ -136,37 +128,36 @@ public class Player : MonoBehaviour
         {
             checkJumpHigh = true;
         }
-        //camera 이동 
-        //   GameManager.Instance.cameraManager.gameObject.transform.position += new Vector3(1, 0, 0) * Time.deltaTime * WalkSpeed;
 
-        
-      
+
         //jump를 위한 raycast 
-        if (Physics.Raycast(transform.position, -transform.up, out hit, 0.4f))
+        if (Physics.Raycast(transform.position, -transform.up, out hit, 0.5f))
         {
 
-            if (Jumpcount > 0)
+            if (Jumpcount >= 0)
             {
                 if (playerStatus == PlayerStatus.DASH || playerStatus == PlayerStatus.CLEAR) return;
 
-            if (checkJumpHigh)
-            {
-                checkJumpHigh = false;
-
-                if (hit.transform.gameObject.tag == "Ground")
+                if (checkJumpHigh)
                 {
-                    rb.velocity = new Vector3(rb.velocity.x, 0, rb.velocity.z);
-                    if(rb.velocity.y == 0)
+                    checkJumpHigh = false;
+
+                    if (hit.transform.gameObject.tag == "Ground")
                     {
-                        animator.SetBool("Jump", false);
+                        rb.velocity = new Vector3(rb.velocity.x, 0, rb.velocity.z);
+                        if (rb.velocity.y == 0)
+                        {
+                            animator.SetBool("Jump", false);
+                        }
+
+                        Jumpcount = startJumpcount;
+                        playerStatus = PlayerStatus.GROUND;
+                        JumpEffect.SetActive(false);
                     }
-
-                    Jumpcount = startJumpcount;
-                    playerStatus = PlayerStatus.GROUND;
-                    JumpEffect.SetActive(false);
                 }
-            }
 
+            }
+            updateMissonResultPos();
         }
 
 
@@ -176,20 +167,11 @@ public class Player : MonoBehaviour
         }
 
 
-
-            updateMissonResultPos();
     }
-
     // 물리 이동,점프 처리
     private void FixedUpdate()
     {
-
-        if (playerStatus != PlayerStatus.CLEAR)
-
-        // 죽으면 동작하지 않음
-        //if (playerStatus == PlayerStatus.DEAD) return;
-
-        
+       
             if (isjump)
             {
                 if (playerStatus == PlayerStatus.DASH) return;
@@ -197,9 +179,10 @@ public class Player : MonoBehaviour
                 Jump();
 
             }
-        
 
 
+        // 죽으면 동작하지 않음
+        //if (playerStatus == PlayerStatus.DEAD) return;
 
         if (playerStatus != PlayerStatus.CLEAR || playerStatus != PlayerStatus.DEAD)
         {
@@ -218,6 +201,8 @@ public class Player : MonoBehaviour
 
             rb.position = pos;
         }
+        
+
     }
 
     private void Jump()
@@ -231,7 +216,7 @@ public class Player : MonoBehaviour
         }
         else
         {
-            rb.AddForce(Vector3.up * TwoJumpSpeed / 2, ForceMode.Impulse);
+            rb.AddForce(Vector3.up * TwoJumpSpeed , ForceMode.Impulse);
         }
         JumpEffect.gameObject.transform.position = gameObject.transform.position;
        
@@ -242,11 +227,7 @@ public class Player : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        if (collision.gameObject.tag == "obstacle")
-        {
-            invincibility = true;
-            StartCoroutine(invincibilityTime());
-        }
+     
 
         // 도착지점
         if (collision.gameObject.CompareTag("End"))
@@ -254,12 +235,13 @@ public class Player : MonoBehaviour
             print("끝");
             playerStatus = PlayerStatus.CLEAR;
             animator.StopPlayback();
-        if (collision.gameObject.tag == "Ground")
-        {
-            JumpEffect.SetActive(false);
-            isGround = true;
-            Jumpcount = 2;
-            animator.SetBool("Walk", true);
+            if (collision.gameObject.tag == "Ground")
+            {
+                JumpEffect.SetActive(false);
+                isGround = true;
+                Jumpcount = 2;
+                animator.SetBool("Walk", true);
+            }
         }
     }
 
@@ -314,12 +296,13 @@ public class Player : MonoBehaviour
 
             //무적
             invincibility = true;
-            StartCoroutine(invincibilityTime());
+          //  StartCoroutine(invincibilityTime());
         }
 
         // 아이템
         if (other.CompareTag("Item"))
         {
+            animator.SetTrigger("Drink");
             // 상태 변경
             playerStatus = PlayerStatus.DASH;
             // 속도 증가
@@ -403,10 +386,7 @@ public class Player : MonoBehaviour
         // 우편물 미션존
         if (other.CompareTag("Misson"))
         {
-            // 타일 색 변경
-            var tilecolor = other.gameObject.GetComponent<MeshRenderer>().material.color;
-            //other.gameObject.GetComponent<MeshRenderer>().material.color = new Color(tilecolor.r - 0.01f, tilecolor.g - 0.01f, tilecolor.b, tilecolor.a);
-            other.gameObject.GetComponent<MeshRenderer>().material.color = new Color32(200, 200, 200, 0);
+            // 타일 색
         
             print("미션존");
             // 우편물을 소지하고 있지 않으면
@@ -470,9 +450,14 @@ public class Player : MonoBehaviour
         rb.useGravity = false;
 
         yield return new WaitForSeconds(fever);
+        
 
         WalkSpeed = culSpeed; // 원래 스피드로 돌아옴
                               // 상태 변경
+
+
+        animator.SetTrigger("Drink");
+
         //playerStatus = PlayerStatus.GROUND; // 상태 정의 픽스되면 변경되어야 함
         GetComponent<Rigidbody>().useGravity = true; // 중력 활성화
          // 상태 변경

@@ -98,7 +98,7 @@ LightmapSettings:
     m_TrainingDataDestination: TrainingData
     m_LightProbeSampleCountMultiplier: 4
   m_LightingDataAsset: {fileID: 0}
-  m_UseShadowmask: 0
+  m_UseShadowmask: 1
 --- !u!196 &4
 NavMeshSettings:
   serializedVersion: 2
@@ -14126,7 +14126,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4429102427960218, guid: ca9fda2f4d77c4d4f88d4ed8b939f69b, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -5.37
+      value: 2.19
       objectReference: {fileID: 0}
     - target: {fileID: 4429102427960218, guid: ca9fda2f4d77c4d4f88d4ed8b939f69b, type: 3}
       propertyPath: m_LocalPosition.y
@@ -14134,7 +14134,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4429102427960218, guid: ca9fda2f4d77c4d4f88d4ed8b939f69b, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 4429102427960218, guid: ca9fda2f4d77c4d4f88d4ed8b939f69b, type: 3}
       propertyPath: m_LocalRotation.x
@@ -15722,7 +15722,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   WalkSpeed: 4
-  BigJumpspeed: 4.5
+  OneJumpSpeed: 10
+  TwoJumpSpeed: 10
   Jumpcount: 1
   isGround: 0
   player: {fileID: 847801274}
@@ -17090,7 +17091,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
   m_LocalRotation: {x: 0.069304675, y: 0.5463637, z: -0.045432948, w: 0.83343834}
-  m_LocalPosition: {x: -12.305924, y: 3.4086363, z: -4.0014806}
+  m_LocalPosition: {x: -4.7459235, y: 3.408636, z: -4.00148}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 2082894106}
@@ -24588,6 +24589,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mailTx: {fileID: 1837444004}
   missionTx: {fileID: 1965664700}
+  missionBar: {fileID: 0}
   missionResultTx: {fileID: 110654621}
   testTx: {fileID: 1424827798}
   culMissonMax: 0
@@ -29115,7 +29117,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2113525513}
   m_LocalRotation: {x: 0.069304675, y: 0.5463637, z: -0.045432948, w: 0.83343834}
-  m_LocalPosition: {x: -12.305924, y: 3.4086363, z: -4.0014806}
+  m_LocalPosition: {x: -4.7459235, y: 3.408636, z: -4.00148}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 1996021062}
