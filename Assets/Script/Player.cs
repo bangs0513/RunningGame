@@ -17,7 +17,8 @@ public class Player : MonoBehaviour
         CLEAR
     }
 
-    private GameObject chickmat;
+    public GameObject Materialobj;
+
 
     [Range(0, 50)]
     public float WalkSpeed = 10f;
@@ -50,7 +51,7 @@ public class Player : MonoBehaviour
 
     //무적시간 
     [Header("무적시간")]
-    public float invincibilityTimeset = 0.2f;
+    public float invincibilityTimeset = 1.0f;
 
     [SerializeField]
     private UiController uiController;
@@ -111,6 +112,10 @@ public class Player : MonoBehaviour
 
     [SerializeField, Header("아이템 먹고 올라가는 시간")]
     private float ItemApexTime = 0.4f;
+
+    public CapsuleCollider PlayerCapsule;
+
+    private bool isObstacle = true;
 
     void Start()
     {
@@ -277,9 +282,16 @@ public class Player : MonoBehaviour
         {
             print("장애물");
 
-            // 무적, 대쉬 상태일 경우 피격 판정 처리를 하지 않음
-            if (playerStatus == PlayerStatus.INVINCIBILITY || playerStatus == PlayerStatus.DASH) return;
+            if(!isObstacle)
+            {
+                return;
+            }
 
+            // 무적, 대쉬 상태일 경우 피격 판정 처리를 하지 않음 (수시로 들어오는 ground 판정떄문에 먹히지 않는다)
+           // if (playerStatus == PlayerStatus.INVINCIBILITY || playerStatus == PlayerStatus.DASH)
+            //{
+            //    return;
+            //}
             StartCoroutine(startKnockback());
 
             // ui 카운트 감소
@@ -291,12 +303,10 @@ public class Player : MonoBehaviour
             checkedDead();
             uiController.mailCount = Mathf.Clamp(uiController.mailCount, -1, 15);
 
-            // 장애물 삭제
-            Destroy(other.gameObject);
-
+            
             //무적
             invincibility = true;
-          //  StartCoroutine(invincibilityTime());
+            StartCoroutine(invincibilityTime());
         }
 
         // 아이템
@@ -482,47 +492,41 @@ public class Player : MonoBehaviour
     IEnumerator invincibilityTime()
     {
         int count = 0;
-        while (count < 10)
-        playerStatus = PlayerStatus.INVINCIBILITY;
+
+     
 
         while(count < 10)
         {
             if (count % 2 == 0)
             {
-                
-             //  playerRenderer.material.SetColor("col", Color.red);
+
+                isObstacle = false;
+                Materialobj.GetComponent<Renderer>().materials[1].SetColor("_BaseColor", new Color32(255, 255, 255, 255));
+                Materialobj.GetComponent<Renderer>().material.SetColor("_BaseColor", new Color32(255, 255, 255, 255));
+                Color color =  Materialobj.GetComponent<Renderer>().material.GetColor("_BaseColor");
             }
             else
             {
-              //  playerRenderer.enabled = false;
+                Materialobj.GetComponent<Renderer>().materials[1].SetColor("_BaseColor", new Color32(255, 255, 255, 0));
+                Materialobj.GetComponent<Renderer>().material.SetColor("_BaseColor", new Color32(255, 255, 255, 0));
             }
+
+
 
             yield return new WaitForSeconds(invincibilityTimeset);
 
             count++;
         }
-        //playerRenderer.material.color = preplayerColor;
+        
+         Materialobj.GetComponent<Renderer>().materials[1].SetColor("_BaseColor", new Color32(255, 255, 255, 255));
+        Materialobj.GetComponent<Renderer>().material.SetColor("_BaseColor", new Color32(255, 255, 255, 255));
 
+        isObstacle = true;
         //invincibility = false;
-        invincibility = false;
-        playerStatus = PlayerStatus.GROUND; // 그라운드 처리?
-
+        
         yield return null;
     }
 
-
-    void OnDrawGizmos()
-    {
-
-        float maxDistance = 0.3f;
-        RaycastHit hit;
-        // Physics.Raycast (레이저를 발사할 위치, 발사 방향, 충돌 결과, 최대 거리)
-        bool isHit = Physics.Raycast(transform.position, -transform.up, out hit, maxDistance);
-
-        Gizmos.color = Color.red;
-     
-            Gizmos.DrawRay(transform.position, -transform.up * hit.distance);
-      
-    }
+    
 
 }
