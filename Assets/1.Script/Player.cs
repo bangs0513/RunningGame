@@ -193,7 +193,7 @@ public class Player : MonoBehaviour
             if (isMisson)
             {
                 pushedShfitTime += Time.deltaTime;
-                print(pushedShfitTime += Time.deltaTime);
+               // print(pushedShfitTime += Time.deltaTime);
                 if (pushedShfitTime > 0.5f)
                     isMisson = false;
             }
@@ -402,8 +402,7 @@ public class Player : MonoBehaviour
             print("끝(트리거)");
             playerStatus = PlayerStatus.CLEAR;
             rb.velocity = Vector3.zero;
-            uiController.ClearScreen.SetActive(true);
-            uiController.Clear();
+            uiController.ShowResult();
             //animator.StopPlayback();
             animator.speed = 0;
             if (!rb.useGravity) // 중력 무시 상태일 때
@@ -435,7 +434,7 @@ public class Player : MonoBehaviour
         if (uiController.mailCount < 0)
         {
             playerStatus = PlayerStatus.DEAD;
-            uiController.GameOverScreen.SetActive(true);
+            uiController.GameOver();
            // Invoke("startReroad", 0.2f);
         }
     }

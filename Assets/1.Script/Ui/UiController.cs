@@ -25,7 +25,7 @@ public class UiController : MonoBehaviour
     public Text missionResultTx;
     public float missionCount { get; set; } = 0; // 미션 성공 수
     private float curMisson; // 현재 스테이지 미션 달성률
-    private float prexx = -286f; // 미션 아이콘 제어용
+    private float prexx = -199; // 미션 아이콘 제어용
     #endregion
 
     #region 타임스코어 관련
@@ -41,17 +41,16 @@ public class UiController : MonoBehaviour
     public bool isPause { get; set; }   // 일시정지 체크
 
     // 클리어
-    [SerializeField, Header("Clear 스크린")]
-    public GameObject ClearScreen;
+    [SerializeField, Header("결과 스크린")]
+    public GameObject ResultScreen;
+    [SerializeField, Header("클리어성공UI")]
+    private GameObject Clear;
+    [SerializeField, Header("클리어실패UI")]
+    private GameObject Fail;
     [SerializeField]
-    private Text clearTimeTx; // 걸린 시간
+    private Text resultTimeTx; // 걸린 시간
     [SerializeField]
-    private Text clearMissonTx; // 미션 결과
-    [SerializeField]
-    private Text resultTx; // 결과 텍스트(테스트용)
-    // 게임오버
-    [Header("게임오버 스크린")]
-    public GameObject GameOverScreen;
+    private Text resultMissonTx; // 미션 결과
     #endregion
 
     [SerializeField, Header("현재 씬 이름")]
@@ -91,9 +90,9 @@ public class UiController : MonoBehaviour
             missionBar.fillAmount = Mathf.Lerp(missionBar.fillAmount, culMissonSuccess, 2 * Time.deltaTime);
 
         // 미션아이콘 처리
-        float rexx = Mathf.Lerp(-286f, 286f, culMissonSuccess);
-        prexx = Mathf.Lerp(prexx, rexx, Time.deltaTime * 2f);
-        missionIcon.localPosition = new Vector3(prexx, 11f, 0);
+        float rexx = Mathf.Lerp(-199, 331, culMissonSuccess);
+        prexx = Mathf.Lerp(prexx, rexx, Time.deltaTime*2f);
+        missionIcon.localPosition = new Vector3(34, prexx, 0);
     }
 
     // 미션 달성률 텍스트
@@ -117,16 +116,29 @@ public class UiController : MonoBehaviour
         timeScroeTx.text = $"<b>{culTimeCounts}</b>"; // 현재 타임스코어 출력
     }
 
-    public void Clear()
+    public void ShowResult()
     {
-        clearTimeTx.text = timeScroeTx.text;
-        clearMissonTx.text = missionTx.text;
+        ResultScreen.SetActive(true);
         if (curMisson >= 60)
         {
-            resultTx.text = "Clear";
+            print("sucsses");
+            Clear.SetActive(true);
         }
         else
-            resultTx.text = "False";
+        {
+            print("Fail");
+            Fail.SetActive(true);
+        }
+        resultTimeTx.text = timeScroeTx.text;
+        resultMissonTx.text = missionTx.text;
+    }
+
+    public void GameOver()
+    {
+        ResultScreen.SetActive(true);
+        Fail.SetActive(true);
+        resultTimeTx.text = timeScroeTx.text;
+        resultMissonTx.text = missionTx.text;
     }
 
     private void GamePause()
