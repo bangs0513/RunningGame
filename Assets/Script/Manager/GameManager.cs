@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -9,6 +10,9 @@ public class GameManager : MonoBehaviour
     public CameraManager cameraManager;
     public Player player;
     public UiController uiController;
+    
+    public int levelToUnlock = 2;
+    
 
     private void Awake()
     {
@@ -31,6 +35,22 @@ public class GameManager : MonoBehaviour
         if(uiController.mailCount <= 0)
         {
             player.playerStatus = Player.PlayerStatus.DEAD;
+        }
+    }
+
+
+
+    public void WinLevel(bool mission)
+    {
+
+        if (mission)
+        {
+            PlayerPrefs.SetInt("levelReached", levelToUnlock);
+            SceneManager.LoadScene("SelectScene");
+        }
+        else
+        {
+            Debug.Log("미션실패");
         }
     }
 }

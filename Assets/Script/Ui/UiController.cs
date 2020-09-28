@@ -4,7 +4,9 @@ using UnityEngine;
 using UnityEngine.UI;
 
 public class UiController : MonoBehaviour
-{
+{    
+    // 현재 미션 달성률
+    public float culMisson = 0f;
     [SerializeField,Header("우편물")]
     private Text mailTx; // 우편물
     [SerializeField, Header("미션 달성률")]
@@ -55,8 +57,8 @@ public class UiController : MonoBehaviour
     // 미션 달성률 텍스트
     private void MissonAchievementQuotient()
     {
-        // 현재 미션 달성률
-        float culMisson = (missionCount / culMissonMax) * 100;
+        
+        culMisson = (missionCount / culMissonMax) * 100;
         culMisson = Mathf.Clamp(culMisson, 0, 100);
         string culMissonCounts = string.Format("{0:N0}", culMisson);
         missionTx.text = $"달성률 : {culMissonCounts}%"; // 현재 미션 달성률 출력

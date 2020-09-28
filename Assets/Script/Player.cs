@@ -117,6 +117,10 @@ public class Player : MonoBehaviour
 
     private bool isObstacle = true;
 
+    private bool isMission = false;
+
+    private bool isObstacleAnim = false;
+
     void Start()
     {
         JumpEffect.SetActive(false);
@@ -153,6 +157,7 @@ public class Player : MonoBehaviour
                         if (rb.velocity.y == 0)
                         {
                             animator.SetBool("Jump", false);
+                            animator.SetBool("DoubleJump", false);
                         }
 
                         Jumpcount = startJumpcount;
@@ -210,15 +215,17 @@ public class Player : MonoBehaviour
 
     private void Jump()
     {
-        animator.SetBool("Jump", true);
 
         playerStatus = PlayerStatus.JUMP;
         if(Jumpcount == 2)
         {
+
+            animator.SetBool("Jump", true);
             rb.AddForce(Vector3.up * OneJumpSpeed, ForceMode.Impulse);
         }
         else
         {
+            animator.SetBool("DoubleJump", true);
             rb.AddForce(Vector3.up * TwoJumpSpeed , ForceMode.Impulse);
         }
         JumpEffect.gameObject.transform.position = gameObject.transform.position;
@@ -242,6 +249,7 @@ public class Player : MonoBehaviour
                 isGround = true;
                 Jumpcount = 2;
                 animator.SetBool("Walk", true);
+                
             }
         }
     }
@@ -276,6 +284,13 @@ public class Player : MonoBehaviour
         // 장애물
         if (other.CompareTag("obstacle"))
         {
+
+            if (!isObstacleAnim)
+            {
+                isObstacleAnim = true;
+                animator.SetTrigger("Damage");
+            }
+
             print("장애물");
 
             if(!isObstacle)
@@ -303,8 +318,8 @@ public class Player : MonoBehaviour
             //무적
             invincibility = true;
 
+            
             StartCoroutine(invincibilityTime());
-
         }
 
         // 아이템
@@ -348,6 +363,18 @@ public class Player : MonoBehaviour
         {
             print("끝");
             playerStatus = PlayerStatus.CLEAR;
+
+            if(uiController.culMisson >= 60)
+            {
+                isMission = true;
+            }
+            else
+            {
+                isMission = false;
+            }
+            //달성률에 따른 씬이동 및 다음 레벨 해체 
+            GameManager.Instance.WinLevel(isMission);
+
             //animator.StopPlayback();
             animator.speed = 0;
             if (!GetComponent<Rigidbody>().useGravity) // 중력 무시 상태일 때
@@ -386,7 +413,7 @@ public class Player : MonoBehaviour
 
     private void startReroad()
     {
-        SceneManager.LoadScene("Bang"); // 일단은 리로드 되도록 처리, 민환님과 합친 후 그라운드 체크 부분과 맞추어서 status 체킹 처리
+        SceneManager.LoadScene("LoadScene"); // 일단은 리로드 되도록 처리, 민환님과 합친 후 그라운드 체크 부분과 맞추어서 status 체킹 처리
     }
 
     private void OnTriggerStay(Collider other)
@@ -486,15 +513,16 @@ public class Player : MonoBehaviour
         missonResultPos.position = UIPos;
     }
 
+
+
     //피격당했을시에 무적시간  
     IEnumerator invincibilityTime()
     {
         int count = 0;
 
-     
-
         while(count < 10)
         {
+            
             if (count % 2 == 0)
             {
 
@@ -502,26 +530,25 @@ public class Player : MonoBehaviour
                 Materialobj.GetComponent<Renderer>().materials[1].SetColor("_BaseColor", new Color32(255, 255, 255, 255));
                 Materialobj.GetComponent<Renderer>().material.SetColor("_BaseColor", new Color32(255, 255, 255, 255));
                 Color color =  Materialobj.GetComponent<Renderer>().material.GetColor("_BaseColor");
+                
             }
             else
             {
                 Materialobj.GetComponent<Renderer>().materials[1].SetColor("_BaseColor", new Color32(255, 255, 255, 0));
                 Materialobj.GetComponent<Renderer>().material.SetColor("_BaseColor", new Color32(255, 255, 255, 0));
             }
-
-
+            
 
             yield return new WaitForSeconds(invincibilityTimeset);
-
+            
             count++;
         }
-        
-         Materialobj.GetComponent<Renderer>().materials[1].SetColor("_BaseColor", new Color32(255, 255, 255, 255));
+        Materialobj.GetComponent<Renderer>().materials[1].SetColor("_BaseColor", new Color32(255, 255, 255, 255));
         Materialobj.GetComponent<Renderer>().material.SetColor("_BaseColor", new Color32(255, 255, 255, 255));
-
         isObstacle = true;
+        isObstacleAnim = false;
         //invincibility = false;
-        
+
         yield return null;
     }
 
